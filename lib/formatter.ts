@@ -1,3 +1,5 @@
+import { RPSLObject } from "../types/RPSL.ts";
+
 function pad(
     key: string, 
     value: string
@@ -12,7 +14,7 @@ function format(
     let str = "";
 
     if (!value) {
-        return;
+        return "";
     }
 
     if (Array.isArray(value)) {
@@ -26,25 +28,34 @@ function format(
     return str;
 }
 
+// This ensures objects are formatted in template order
+// (https://apps.db.ripe.net/db-web-ui/query?searchtext=-t%20as-set).
+// If this isn't done the key ("as-set") could appear elsewhere than the top,
+// which IRR databases will not accept.
+const ORDER = [
+    "descr",
+    "members",
+    "mbrs-by-ref",
+    "remarks",
+    "org",
+    "tech-c",
+    "admin-c",
+    "notify",
+    "mnt-by",
+    "mnt-lower",
+    "created",
+    "last-modified",
+    "source"
+];
+
 export function formatAsSet(
-    data: {
-        "as-set": string,
-        descr?: Array<string> | string,
-        members: Array<string> | string,
-        "mbrs-by-ref"?: Array<string> | string,
-        remarks?: Array<string> | string,
-        org: Array<string> | string,
-        "tech-c": Array<string> | string,
-        "admin-c": Array<string> | string,
-        notify?: Array<string> | string;
-        "mnt-by": Array<string> | string,
-        "mnt-lower"?: Array<string> | string,
-        source: string
-    }
+    data: RPSLObject
 ) {
     let str = "";
-    for (const [key, value] of Object.entries(data)) {
-        const formatted = format(key, value);
+
+    for (const key of ORDER) {
+        // @ts-ignore: We handle data[key] not being defined elsewhere.
+        const formatted = format(key, data[key]);
 
         if (formatted) str += formatted;
     }

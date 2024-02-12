@@ -4,6 +4,9 @@ import { whois } from "./whois.ts";
 import { log as vlog } from "./logger.ts";
 import { Level } from "./logger.ts";
 import { CARRIER_ASNS } from "../data/asSet.ts";
+import { config } from "../flattener.config.ts";
+
+const MATCH_ASN = /(AS\d{1,10}$)/g;
 
 const encountered: Array<string> = [];
 const flattened: Array<string> = [];
@@ -15,17 +18,26 @@ function recurseAsSet(
 ) {
     // deno-lint-ignore no-async-promise-executor
     return new Promise(async (resolve, reject) => {
-        const MATCH_ASN = /(AS\d{1,10}$)/g;
-
-        if (depth > 10) return reject(`too deep (depth = ${depth})`);
+        if (depth > config.flattenerOptions.maxDepth) {
+            return reject(`Recursed too deep (depth = ${depth}).`);
+        }
     
         if (depth !== 0) encountered.push(asSet);
     
-        const members = getAsSetMembers(
-            parseRPSL(
-                (await whois(asSet, {server: 'whois.radb.net'})).output
-            )
-        );
+        const res = await whois(asSet, {server: config.flattenerOptions.whoisServer});
+        if (!res.status.success) {
+            const msg = `Received non-successful exit code ${res.status.code} when attempting WHOIS query.`;
+
+            vlog(
+                msg,
+                {level: Level.ERROR, verbose: false}
+            );
+
+            return reject(msg);
+        }
+
+        const rpsl = parseRPSL(res.output);
+        const members = getAsSetMembers(rpsl);
     
         vlog(
             `Currently processing ${asSet} at depth ${depth}.`,
