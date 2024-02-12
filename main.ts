@@ -5,7 +5,8 @@ import { asnSorter } from "./lib/helpers.ts";
 import { Level, log } from "./lib/logger.ts";
 
 export interface GlobalInterface {
-    verboseMode?: boolean
+    verboseMode?: boolean,
+    maxDepth?: number
 }
 
 export const global: GlobalInterface = {};
@@ -24,13 +25,17 @@ if (flags.help) {
 Options:
     --help          Show this menu.
     --as-set        The AS set to flatten.          [REQUIRED]
-    --max-depth     The maximum recursion depth.    [REQUIRED]`)
+    --max-depth     The maximum recursion depth.    [REQUIRED]`);
 
     Deno.exit(0);
 }
 
 if (flags.verbose) {
     global.verboseMode = true;
+}
+
+if (flags["max-depth"]) {
+    global.maxDepth = Number(flags["max-depth"]);
 }
 
 const missingFlags = [];

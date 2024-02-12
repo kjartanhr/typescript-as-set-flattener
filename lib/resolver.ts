@@ -3,6 +3,7 @@ import { getAsSetMembers } from "./parser.ts";
 import { whois } from "./whois.ts";
 import { log as vlog } from "./logger.ts";
 import { Level } from "./logger.ts";
+import { CARRIER_ASNS } from "../data/asSet.ts";
 
 const encountered: Array<string> = [];
 const flattened: Array<string> = [];
@@ -28,49 +29,60 @@ function recurseAsSet(
     
         vlog(
             `Currently processing ${asSet} at depth ${depth}.`,
-            {
-                level: Level.INFO
-            }
+            {level: Level.INFO}
         );
     
         for (const member of members) {
             const IS_ASN = MATCH_ASN.test(member);
             const IS_NEW = !encountered.includes(member);
-    
-            if (!IS_ASN && IS_NEW) {
-                vlog(
-                    `Processing valid member ${member} of ${asSet}.`,
-                    {
-                        level: Level.INFO
-                    }
-                );
+            const IS_CARRIER_ASN = CARRIER_ASNS.includes(member);
 
-                try {
-                    await recurseAsSet(
-                        member, 
-                        depth + 1
+            // nessecary "lamda" to do guard clauses
+            await (async () => {
+                if (IS_CARRIER_ASN) {
+                    return vlog(
+                        `Not processing known carrier ASN ${member} in ${asSet}.`,
+                        {level: Level.INFO}
                     );
-                } catch (e) {
-                    log.push([member, e]);
                 }
-            } else if (IS_ASN && IS_NEW) {
-                vlog(
-                    `Populating ASN ${member} in ${asSet}.`,
-                    {
-                        level: Level.INFO
+
+                if (!IS_NEW) {
+                    return vlog(
+                        `Not processing previously encountered member ${member} of ${asSet}.`,
+                        {level: Level.INFO}
+                    );
+                }
+
+                if (IS_ASN) {
+                    vlog(
+                        `Populating ASN ${member} in ${asSet}.`,
+                        {level: Level.INFO}
+                    );
+                    
+                    encountered.push(member);
+                    flattened.push(member);
+
+                    return;
+                }
+
+                if (!IS_ASN) {
+                    vlog(
+                        `Processing valid member ${member} of ${asSet}.`,
+                        {level: Level.INFO}
+                    );
+    
+                    try {
+                        await recurseAsSet(
+                            member, 
+                            depth + 1
+                        );
+                    } catch (e) {
+                        log.push([member, e]);
                     }
-                );
-                
-                encountered.push(member);
-                flattened.push(member);
-            } else {
-                vlog(
-                    `Not processing previously encountered member ${member} of ${asSet}.`,
-                    {
-                        level: Level.INFO
-                    }
-                );
-            }
+
+                    return;
+                }
+            })();
         }
 
         return resolve(depth);
