@@ -33,6 +33,7 @@ function format(
 // If this isn't done the key ("as-set") could appear elsewhere than the top,
 // which IRR databases will not accept.
 const ORDER = [
+    "as-set",
     "descr",
     "members",
     "mbrs-by-ref",
