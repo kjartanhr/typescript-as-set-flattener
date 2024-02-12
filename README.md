@@ -2,7 +2,15 @@
 
 # Project description
 
-...
+This program queries for a specified AS set in an Internet Routing Registry (IRR) database (RADB by default) and recurses through each member, adding each member that matches the syntax of an ASN to a "flattened" AS set while continuing to recurse further into nested AS sets.
+
+This achieves a few things but notably has some desirable benefits:
+
+- The program will check if it has encountered a member before. This means circular references are algorithmically removed. It also means it de-duplicates the resulting flattened AS set automatically.
+- Known carrier ASNs are ignored and do not get added to the resulting flattened AS set, giving the user confidence their flattened AS set won't permit a customer to e.g. inject Cloudflare into their AS path.
+- Transits with worse filtering than you won't have to traverse deeper than just your flattened AS set, as there are no nested AS sets.
+
+It is written with TypeScript using the Deno runtime.
 
 # Goals
 
@@ -27,6 +35,4 @@ Project goals:
 Unticked boxes are TODOs, will be completed in due course.
 
 Other TODOs:
-- Finish README
-- License
 - How to run & configure
