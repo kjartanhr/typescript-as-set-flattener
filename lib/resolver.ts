@@ -54,7 +54,7 @@ function recurseAsSet(
     
         vlog(
             `Currently processing ${asSet} at depth ${depth}.`,
-            {level: Level.INFO}
+            {level: Level.INFO, shouldNotLog: !verbose}
         );
     
         for (const member of members) {

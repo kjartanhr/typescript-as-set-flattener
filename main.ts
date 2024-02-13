@@ -26,7 +26,7 @@ Options:
 const flattened = await flatten(
     config.flattenerOptions.asSet, 
     config.flattenerOptions.whoisServer,
-    flags?.verbose || false
+    flags.verbose || false
 );
 
 console.log(formatAsSet({
