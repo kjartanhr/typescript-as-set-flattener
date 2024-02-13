@@ -72,8 +72,8 @@ function recurseAsSet(
                         {level: Level.INFO}
                     );
                     
-                    encountered.push(member);
-                    flattened.push(member);
+                    encountered.push(member.toLowerCase());
+                    flattened.push(member.toLowerCase());
 
                     return;
                 }
