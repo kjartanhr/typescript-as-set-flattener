@@ -3,10 +3,11 @@ import { getAsSetMembers } from "./parser.ts";
 import { whois } from "./whois.ts";
 import { log as vlog } from "./logger.ts";
 import { Level } from "./logger.ts";
-import { CARRIER_ASNS } from "../data/asSet.ts";
 import { config } from "../flattener.config.ts";
 
 const MATCH_ASN = /(AS\d{1,10}$)/g;
+const CARRIERS = config.omit?.carriers?.map(carrier => carrier.toLowerCase());
+const BLOCKED = config.omit?.blocked?.map(blocked => blocked.toLowerCase());
 
 const encountered: Array<string> = [];
 const flattened: Array<string> = [];
@@ -22,7 +23,7 @@ function recurseAsSet(
             return reject(`Recursed too deep (depth = ${depth}).`);
         }
     
-        if (depth !== 0) encountered.push(asSet);
+        if (depth !== 0) encountered.push(asSet.toLowerCase());
     
         const res = await whois(asSet, {server: config.flattenerOptions.whoisServer});
         if (!res.status.success) {
@@ -46,14 +47,14 @@ function recurseAsSet(
     
         for (const member of members) {
             const IS_ASN = MATCH_ASN.test(member);
-            const IS_NEW = !encountered.includes(member);
-            const IS_CARRIER_ASN = CARRIER_ASNS.includes(member);
+            const IS_NEW = !encountered.includes(member.toLowerCase());
+            const IS_OMITTED = CARRIERS?.includes(member.toLowerCase()) || BLOCKED?.includes(member.toLowerCase());
 
             // nessecary "lamda" to do guard clauses
             await (async () => {
-                if (IS_CARRIER_ASN) {
+                if (IS_OMITTED) {
                     return vlog(
-                        `Not processing known carrier ASN ${member} in ${asSet}.`,
+                        `Not processing known carrier or blocked member ${member} in ${asSet}.`,
                         {level: Level.INFO}
                     );
                 }
