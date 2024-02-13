@@ -5,7 +5,6 @@ import { log as vlog } from "./logger.ts";
 import { Level } from "./logger.ts";
 import { config } from "../flattener.config.ts";
 
-const MATCH_ASN = /(AS\d{1,10}$)/g;
 const CARRIERS = config.omit?.carriers?.map(carrier => carrier.toLowerCase());
 const BLOCKED = config.omit?.blocked?.map(blocked => blocked.toLowerCase());
 
@@ -13,9 +12,22 @@ const encountered: Array<string> = [];
 const flattened: Array<string> = [];
 const log: Array<[string, string]> = [];
 
+function isASN(
+    str: string
+) {
+    const as = Number(str.substring(2, str.length));
+
+    return str[0].toLowerCase() === "a"
+        && str[1].toLowerCase() === "s"
+        && typeof as === "number"
+        && !isNaN(as);
+}
+
 function recurseAsSet(
     asSet: string,
-    depth: number
+    depth: number,
+    whoisServer: string,
+    verbose: boolean
 ) {
     // deno-lint-ignore no-async-promise-executor
     return new Promise(async (resolve, reject) => {
@@ -25,13 +37,13 @@ function recurseAsSet(
     
         if (depth !== 0) encountered.push(asSet.toLowerCase());
     
-        const res = await whois(asSet, {server: config.flattenerOptions.whoisServer});
+        const res = await whois(asSet, {server: whoisServer});
         if (!res.status.success) {
             const msg = `Received non-successful exit code ${res.status.code} when attempting WHOIS query.`;
 
             vlog(
                 msg,
-                {level: Level.ERROR, verbose: false}
+                {level: Level.ERROR}
             );
 
             return reject(msg);
@@ -46,7 +58,7 @@ function recurseAsSet(
         );
     
         for (const member of members) {
-            const IS_ASN = MATCH_ASN.test(member);
+            const IS_ASN = isASN(member);
             const IS_NEW = !encountered.includes(member.toLowerCase());
             const IS_OMITTED = CARRIERS?.includes(member.toLowerCase()) || BLOCKED?.includes(member.toLowerCase());
 
@@ -54,22 +66,22 @@ function recurseAsSet(
             await (async () => {
                 if (IS_OMITTED) {
                     return vlog(
-                        `Not processing known carrier or blocked member ${member} in ${asSet}.`,
-                        {level: Level.INFO}
+                        `Not processing known carrier or blocked member "${member}" of "${asSet}".`,
+                        {level: Level.INFO, shouldNotLog: !verbose}
                     );
                 }
 
                 if (!IS_NEW) {
                     return vlog(
-                        `Not processing previously encountered member ${member} of ${asSet}.`,
-                        {level: Level.INFO}
+                        `Not processing previously encountered member "${member}" of "${asSet}".`,
+                        {level: Level.INFO, shouldNotLog: !verbose}
                     );
                 }
 
                 if (IS_ASN) {
                     vlog(
-                        `Populating ASN ${member} in ${asSet}.`,
-                        {level: Level.INFO}
+                        `Populating member ASN "${member}" of "${asSet}".`,
+                        {level: Level.INFO, shouldNotLog: !verbose}
                     );
                     
                     encountered.push(member.toLowerCase());
@@ -80,14 +92,16 @@ function recurseAsSet(
 
                 if (!IS_ASN) {
                     vlog(
-                        `Processing valid member ${member} of ${asSet}.`,
-                        {level: Level.INFO}
+                        `Processing member AS set "${member}" of "${asSet}".`,
+                        {level: Level.INFO, shouldNotLog: !verbose}
                     );
     
                     try {
                         await recurseAsSet(
                             member, 
-                            depth + 1
+                            depth + 1,
+                            whoisServer,
+                            verbose
                         );
                     } catch (e) {
                         log.push([member, e]);
@@ -103,12 +117,16 @@ function recurseAsSet(
 }
 
 export async function flatten(
-    asSet: string
+    asSet: string,
+    whoisServer: string,
+    verbose: boolean
 ) {
     try {
         await recurseAsSet(
             asSet,
-            0
+            0,
+            whoisServer,
+            verbose
         );
     } catch (e) {
         log.push([asSet, e]);

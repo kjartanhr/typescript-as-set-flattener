@@ -23,11 +23,11 @@ Options:
     Deno.exit(0);
 }
 
-if (flags.verbose) {
-    global.verboseMode = true;
-}
-
-const flattened = await flatten(config.flattenerOptions.asSet);
+const flattened = await flatten(
+    config.flattenerOptions.asSet, 
+    config.flattenerOptions.whoisServer,
+    flags?.verbose || false
+);
 
 console.log(formatAsSet({
     members: [

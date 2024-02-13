@@ -1,5 +1,4 @@
 import { bgBrightBlue, bgYellow, bgRed, white, black, bold } from "https://deno.land/std@0.215.0/fmt/colors.ts";
-import { global } from "../main.ts";
 
 export enum Level {
     INFO,
@@ -11,10 +10,10 @@ export function log(
     message: string,
     opts: {
         level: Level,
-        verbose?: boolean
+        shouldNotLog?: boolean
     }
 ) {
-    if (opts.verbose && !global.verboseMode) {
+    if (opts.shouldNotLog) {
         return;
     }
 
