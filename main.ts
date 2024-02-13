@@ -32,7 +32,7 @@ const flattened = await flatten(config.flattenerOptions.asSet);
 console.log(formatAsSet({
     members: [
         "AS51019",
-        ...flattened.sort(asnSorter)
+        ...flattened.sort(asnSorter).map(asn => asn.toUpperCase())
     ],
     ...config.resultOptions,
 }))
