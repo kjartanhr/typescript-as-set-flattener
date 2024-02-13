@@ -29,7 +29,7 @@ Project goals:
 - [x] Flattening AS sets: algorithmically deduplicate the output.
 - [x] Flattening AS sets: restrict recursion depth to a user-defined value.
 - [x] Flattening AS sets: ignore any tier 1/tier 2/well known carrier networks.
-- [ ] Flattening AS sets: ignore any user-defined "banned" networks.
+- [x] Flattening AS sets: ignore any user-defined "banned" networks.
 - [ ] Interact with the RIPE/ARIN/LACNIC/APNIC/AFRINIC APIs, auto-dbm or rest, to automatically update the database with the flattened AS set.
 
 Unticked boxes are TODOs, will be completed in due course.
